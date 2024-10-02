@@ -20,3 +20,19 @@
 
 	};
 };
+
+&i2c0 {
+	status = "okay";
+
+	bme688: bme688@76 {
+		compatible = "bosch,bme680";
+		status = "okay";
+		reg = <0x76>;
+	};
+
+	bmi270: bmi270@68 {
+		compatible = "bosch,bmi270";
+		status = "okay";
+		reg = <0x68>;
+	};
+};

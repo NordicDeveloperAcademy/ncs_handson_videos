@@ -27,5 +27,10 @@ config APP_CONTROL_SAMPLING_INTERVAL_S
 	default 10
 	help
 	  Time in seconds between sample data acquisition from sensors
-
+config SIMULATED_SENSOR
+	bool "Enable simulated sensor"
+	default n
+	help
+	  In case you don't have environmental and IMU sensors, enabling this option will 
+	  build a simulated sensor driver	
 endmenu
