@@ -3,11 +3,59 @@
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/sensor.h>
-
+#include <zephyr/bluetooth/conn.h>
+#include <bluetooth/services/nsms.h>
 #include "sensor_data_collector.h"
 
 #define SENSOR_THREAD_PRIORITY	7
 #define SENSOR_THREAD_STACKSIZE 1024
+#define BUF_SIZE		64
+
+BT_NSMS_DEF(nsms_imu, "IMU", false, "Unknown", BUF_SIZE);
+BT_NSMS_DEF(nsms_env, "Environmental", false, "Unknown", BUF_SIZE);
+static struct bt_conn *current_conn = NULL;
+
+static void connected(struct bt_conn *conn, uint8_t err)
+{
+	current_conn = bt_conn_ref(conn);
+}
+
+static void disconnected(struct bt_conn *conn, uint8_t reason)
+{
+	if (current_conn) {
+		bt_conn_unref(current_conn);
+		current_conn = NULL;
+	}
+}
+
+BT_CONN_CB_DEFINE(conn_callbacks1) = {
+	.connected = connected,
+	.disconnected = disconnected,
+
+};
+static bool send_sensor_value(const struct sensor_value *val, size_t size, const char *channel)
+{
+	float float_data[size];
+	char buf[BUF_SIZE];
+
+	int len = sprintf(buf, "%s ", channel);
+
+	for (size_t i = 0; i < size; i++) {
+		float_data[i] = sensor_value_to_float(&val[i]);
+
+		len += sprintf(buf + len, "%.6f ", (double)float_data[i]);
+	}
+
+	if (!strcmp(channel, "gyr")) {
+		bt_nsms_set_status(&nsms_imu, buf);
+	} else if (!strcmp(channel, "acc")) {
+		bt_nsms_set_status(&nsms_imu, buf);
+	} else {
+		bt_nsms_set_status(&nsms_env, buf);
+	}
+
+	return true;
+}
 
 #ifdef CONFIG_SIMULATED_SENSOR
 static const struct device *get_simulated_sensor(void)
@@ -134,6 +182,12 @@ int sensor_data_collector(void)
 		printk("T: %d.%06d; P: %d.%06d; H: %d.%06d\n", value.temp.val1, value.temp.val2,
 		       value.press.val1, value.press.val2, value.humidity.val1,
 		       value.humidity.val2);
+		if (current_conn != NULL) {
+			send_sensor_value(&value.temp, 1, "temp");
+			send_sensor_value(&value.press, 1, "press");
+			send_sensor_value(&value.humidity, 1, "humidity");
+			send_sensor_value(value.acc, 3, "acc");
+		}				   
 		k_sleep(K_SECONDS(CONFIG_APP_CONTROL_SAMPLING_INTERVAL_S));
 	}
 
@@ -167,6 +221,14 @@ int sensor_data_collector(void)
 		printk("T: %d.%06d; P: %d.%06d; H: %d.%06d; G: %d.%06d\n", value.temp.val1,
 		       value.temp.val2, value.press.val1, value.press.val2, value.humidity.val1,
 		       value.humidity.val2, value.gas_res.val1, value.gas_res.val2);
+		if (current_conn != NULL) {
+			send_sensor_value(&value.temp, 1, "temp");
+			send_sensor_value(&value.press, 1, "press");
+			send_sensor_value(&value.humidity, 1, "humidity");
+			send_sensor_value(&value.gas_res, 1, "gas_res");
+			send_sensor_value(value.acc, 3, "acc");
+			send_sensor_value(value.gyr, 3, "gyr");
+		}					   
 		k_sleep(K_SECONDS(CONFIG_APP_CONTROL_SAMPLING_INTERVAL_S));
 	}
 
