@@ -9,12 +9,54 @@
 
 #define SENSOR_THREAD_PRIORITY	7
 #define SENSOR_THREAD_STACKSIZE 1024
+#define BT_UUID_CSERVICE_VAL	BT_UUID_128_ENCODE(0xc2768000, 0xc410, 0x47e5, 0xbda9, 0x97fa0b0b9a99)
+#define BT_UUID_INTERVAL_VAL	BT_UUID_128_ENCODE(0xc2768001, 0x1212, 0xefde, 0x1523, 0x785feabcd123)
+#define BT_UUID_C_SERVICE	BT_UUID_DECLARE_128(BT_UUID_CSERVICE_VAL)
+#define BT_UUID_S_INTERVAL	BT_UUID_DECLARE_128(BT_UUID_INTERVAL_VAL)
 #define BUF_SIZE		64
 
 BT_NSMS_DEF(nsms_imu, "IMU", false, "Unknown", BUF_SIZE);
 BT_NSMS_DEF(nsms_env, "Environmental", false, "Unknown", BUF_SIZE);
 static struct bt_conn *current_conn = NULL;
+static int16_t sampling_interval = CONFIG_APP_CONTROL_SAMPLING_INTERVAL_S;
+extern const k_tid_t sensor_data_collector_id;
+static ssize_t sampling_interval_read(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+				      void *buf, uint16_t len, uint16_t offset)
+{
+	return bt_gatt_attr_read(conn, attr, buf, len, offset, &sampling_interval,
+				 sizeof(sampling_interval));
+}
 
+static ssize_t sampling_interval_write(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+				       const void *buf, uint16_t len, uint16_t offset,
+				       uint8_t flags)
+{
+	uint16_t new_interval;
+	if (len != sizeof(sampling_interval)) {
+		return BT_GATT_ERR(BT_ATT_ERR_INVALID_ATTRIBUTE_LEN);
+	}
+
+	memcpy(&new_interval, buf, sizeof(new_interval));
+
+	if (new_interval < 10 || new_interval > 5400) {
+		printk("Sampling interval out of allowed range: %d\n", new_interval);
+		return BT_GATT_ERR(BT_ATT_ERR_INVALID_ATTRIBUTE_LEN);
+	}
+
+	sampling_interval = new_interval;
+	k_wakeup(sensor_data_collector_id);
+	printk("New sampling interval %d seconds\n", new_interval);
+	return len;
+}
+
+BT_GATT_SERVICE_DEFINE(
+	custom_interval_svc, BT_GATT_PRIMARY_SERVICE(BT_UUID_C_SERVICE),
+	BT_GATT_CHARACTERISTIC(BT_UUID_S_INTERVAL, // Sampling Interval Characteristic
+			       BT_GATT_CHRC_READ | BT_GATT_CHRC_WRITE,
+			       BT_GATT_PERM_READ | BT_GATT_PERM_WRITE, sampling_interval_read,
+			       sampling_interval_write, &sampling_interval)
+
+);
 static void connected(struct bt_conn *conn, uint8_t err)
 {
 	current_conn = bt_conn_ref(conn);
@@ -188,7 +230,7 @@ int sensor_data_collector(void)
 			send_sensor_value(&value.humidity, 1, "humidity");
 			send_sensor_value(value.acc, 3, "acc");
 		}				   
-		k_sleep(K_SECONDS(CONFIG_APP_CONTROL_SAMPLING_INTERVAL_S));
+		k_sleep(K_SECONDS(sampling_interval));
 	}
 
 #else
@@ -229,7 +271,7 @@ int sensor_data_collector(void)
 			send_sensor_value(value.acc, 3, "acc");
 			send_sensor_value(value.gyr, 3, "gyr");
 		}					   
-		k_sleep(K_SECONDS(CONFIG_APP_CONTROL_SAMPLING_INTERVAL_S));
+		k_sleep(K_SECONDS(sampling_interval));
 	}
 
 #endif
