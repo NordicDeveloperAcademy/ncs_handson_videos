@@ -10,7 +10,7 @@ project(peripheral_lbs)
 
 # NORDIC SDK APP START
 target_sources(app PRIVATE
-  src/main.c src/sensor_data_collector.c
+  src/main.c src/sensor_data_collector.c src/sensor_data_storage.c
 )
 target_include_directories(app PRIVATE inc)
 # NORDIC SDK APP END

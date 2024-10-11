@@ -14,7 +14,7 @@
 #define BT_UUID_C_SERVICE	BT_UUID_DECLARE_128(BT_UUID_CSERVICE_VAL)
 #define BT_UUID_S_INTERVAL	BT_UUID_DECLARE_128(BT_UUID_INTERVAL_VAL)
 #define BUF_SIZE		64
-
+K_MSGQ_DEFINE(sensor_readings_queue, sizeof(sensorsreadings), 16, 4);
 BT_NSMS_DEF(nsms_imu, "IMU", false, "Unknown", BUF_SIZE);
 BT_NSMS_DEF(nsms_env, "Environmental", false, "Unknown", BUF_SIZE);
 static struct bt_conn *current_conn = NULL;
@@ -229,7 +229,11 @@ int sensor_data_collector(void)
 			send_sensor_value(&value.press, 1, "press");
 			send_sensor_value(&value.humidity, 1, "humidity");
 			send_sensor_value(value.acc, 3, "acc");
-		}				   
+		}
+		int ret = k_msgq_put(&sensor_readings_queue, &value, K_NO_WAIT);
+		if (ret) {
+			printk("Return value from k_msgq_put = %d", ret);
+		}						   
 		k_sleep(K_SECONDS(sampling_interval));
 	}
 
@@ -270,12 +274,20 @@ int sensor_data_collector(void)
 			send_sensor_value(&value.gas_res, 1, "gas_res");
 			send_sensor_value(value.acc, 3, "acc");
 			send_sensor_value(value.gyr, 3, "gyr");
-		}					   
+		}
+		int ret = k_msgq_put(&sensor_readings_queue, &value, K_NO_WAIT);
+		if (ret) {
+			printk("Return value from k_msgq_put = %d", ret);
+		}							   
 		k_sleep(K_SECONDS(sampling_interval));
 	}
 
 #endif
 }
+struct k_msgq *get_sensor_readings_queue(void)
+{
 
+	return &sensor_readings_queue;
+}
 K_THREAD_DEFINE(sensor_data_collector_id, SENSOR_THREAD_STACKSIZE, sensor_data_collector, NULL,
 		NULL, NULL, SENSOR_THREAD_PRIORITY, 0, 1000);
