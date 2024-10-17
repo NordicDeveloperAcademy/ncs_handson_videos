@@ -38,6 +38,11 @@
 #define USER_BUTTON DK_BTN1_MSK
 
 static bool app_button_state;
+static const struct bt_le_adv_param *connectable_ad_params =
+	BT_LE_ADV_PARAM(BT_LE_ADV_OPT_CONNECTABLE,
+			CONFIG_CONNECTABLE_ADV_INTERVAL_MIN,
+			CONFIG_CONNECTABLE_ADV_INTERVAL_MAX,
+			NULL);
 
 static const struct bt_data ad[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
@@ -227,7 +232,7 @@ int main(void)
 		return 0;
 	}
 
-	err = bt_le_adv_start(BT_LE_ADV_CONN, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
+	err = bt_le_adv_start(connectable_ad_params, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
 	if (err) {
 		printk("Advertising failed to start (err %d)\n", err);
 		return 0;

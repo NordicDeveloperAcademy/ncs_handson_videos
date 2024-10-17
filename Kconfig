@@ -20,7 +20,17 @@ config BT_LBS_SECURITY_ENABLED
 	select SETTINGS
 	help
 	  "Enable BLE security for the LED-Button service"
+config CONNECTABLE_ADV_INTERVAL_MIN
+	int "Connectable advertising minimum interval"
+	default 4800
+	help
+	  Connectable advertising minimum interval in 0.625 milliseconds unit.
 
+config CONNECTABLE_ADV_INTERVAL_MAX
+	int "Connectable advertising maximum interval"
+	default 4808
+	help
+	  Connectable advertising maximum interval in 0.625 milliseconds unit.
 config APP_CONTROL_SAMPLING_INTERVAL_S
 	int "sample interval [s]"
 	range 10 5400
