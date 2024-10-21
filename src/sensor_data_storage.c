@@ -14,7 +14,7 @@
 #define MTX_LOCK_WAIT_TIME	 K_MSEC(200)
 
 /* Partition selection for where to store the data */
-#define NVS_PARTITION		 sensor_data_in_partition
+#define NVS_PARTITION		 sensor_data_ex_partition
 #define NVS_PARTITION_DEVICE	 FIXED_PARTITION_DEVICE(NVS_PARTITION)
 #define NVS_PARTITION_OFFSET	 FIXED_PARTITION_OFFSET(NVS_PARTITION)
 #define NVS_PARTITION_SIZE	 FIXED_PARTITION_SIZE(NVS_PARTITION)

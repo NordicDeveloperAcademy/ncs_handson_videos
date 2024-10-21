@@ -1,0 +1,5 @@
+sensor_data_ex_partition:
+  address: 0x0
+  end_address: 0x800000
+  region: external_flash
+  size: 0x800000

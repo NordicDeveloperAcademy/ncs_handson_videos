@@ -37,49 +37,9 @@
 	};
 };
 
-&mx25r64 {
-	partitions {
-		compatible = "fixed-partitions";
-		#address-cells = <1>;
-		#size-cells = <1>;
-		sensor_data_ex_partition: partition@0 {
-			label = "sensor_data_ex_partition";
-			reg = <0x00000000 0x00800000>;
-		};
-	};
-};
-
-/delete-node/ &slot0_partition;
-/delete-node/ &slot1_partition;
-/delete-node/ &storage_partition;
-&flash0 {
-
-	partitions {
-		compatible = "fixed-partitions";
-		#address-cells = <1>;
-		#size-cells = <1>;
-
-		boot_partition: partition@0 {
-			label = "mcuboot";
-			reg = <0x00000000 0x0000C000>;
-		};
-		slot0_partition: partition@c000 {
-			label = "image-0";
-			reg = <0x0000C000 0x00070800>;
-		};
-		slot1_partition: partition@7c800 {
-			label = "image-1";
-			reg = <0x0007c800 0x00070800>;
-		};
-
-		storage_partition: partition@ed000 {
-			label = "storage";
-			reg = <0x000ed000 0x00005000>;
-		};
-		sensor_data_in_partition: partition@f2000 {
-			label = "sensor_data_in_partition";
-			reg = <0x000f2000 0x0000e000>;
-		};		
+/ {
+	chosen {
+		nordic,pm-ext-flash = &mx25r64;
 	};
 };
 &usbd {
